@@ -1,0 +1,47 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "Managers\\Manager.Delivery\\Manager.Delivery.csproj",
+        "Action": "StartWithoutDebugging"
+      },
+      {
+        "Path": "Managers\\Manager.Schema\\Manager.Schema.csproj",
+        "Action": "StartWithoutDebugging"
+      },
+      {
+        "Path": "Managers\\Manager.Address\\Manager.Address.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Managers\\Manager.Processor\\Manager.Processor.csproj",
+        "Action": "StartWithoutDebugging"
+      },
+      {
+        "Path": "Managers\\Manager.Assignment\\Manager.Assignment.csproj",
+        "Action": "StartWithoutDebugging"
+      },
+      {
+        "Path": "Managers\\Manager.Step\\Manager.Step.csproj",
+        "Action": "StartWithoutDebugging"
+      },
+      {
+        "Path": "Managers\\Manager.Workflow\\Manager.Workflow.csproj",
+        "Action": "StartWithoutDebugging"
+      },
+      {
+        "Path": "Managers\\Manager.OrchestratedFlow\\Manager.OrchestratedFlow.csproj",
+        "Action": "StartWithoutDebugging"
+      },
+      {
+        "Path": "Managers\\Manager.Orchestrator\\Manager.Orchestrator.csproj",
+        "Action": "StartWithoutDebugging"
+      },
+      {
+        "Path": "Processors\\Processor.File\\Processor.File.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

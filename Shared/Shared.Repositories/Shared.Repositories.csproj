@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Shared.Repositories</RootNamespace>
+    <AssemblyName>Shared.Repositories</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <Authors>Manager.Schemas Team</Authors>
+    <Description>Shared repository classes for the Manager.Schemas application</Description>
+    <PackageId>Shared.Repositories</PackageId>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MongoDB.Driver" Version="2.22.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared.Correlation\Shared.Correlation.csproj" />
+    <ProjectReference Include="..\Shared.Entities\Shared.Entities.csproj" />
+    <ProjectReference Include="..\Shared.Exceptions\Shared.Exceptions.csproj" />
+    <ProjectReference Include="..\Shared.Services\Shared.Services.csproj" />
+  </ItemGroup>
+
+  <!-- Include Shared services for IEventPublisher -->
+  <ItemGroup>
+    <Compile Include="..\Shared\Services\**\*.cs" Exclude="..\Shared\Services\bin\**;..\Shared\Services\obj\**" />
+  </ItemGroup>
+
+</Project>

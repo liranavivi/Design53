@@ -1,0 +1,6 @@
+{
+  "version": "1.2.3",
+  "name": "MessageWithTimestamp",
+  "description": "Data structure for message with timestamp",
+  "definition": "{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"title\":\"MessageWithTimestamp\",\"description\":\"Data structure for message with timestamp\",\"properties\":{\"message\":{\"type\":\"string\",\"description\":\"Text message content\"},\"timestamp\":{\"type\":\"string\",\"description\":\"Timestamp when the message was created\",\"format\":\"date-time\"}},\"required\":[\"message\",\"timestamp\"],\"additionalProperties\":false}"
+}

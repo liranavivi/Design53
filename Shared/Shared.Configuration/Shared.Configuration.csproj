@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Shared.Configuration</RootNamespace>
+    <AssemblyName>Shared.Configuration</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <Authors>Manager.Schemas Team</Authors>
+    <Description>Shared configuration classes for the Manager.Schemas application</Description>
+    <PackageId>Shared.Configuration</PackageId>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
+    <PackageReference Include="MongoDB.Driver" Version="2.22.0" />
+    <PackageReference Include="MassTransit" Version="8.2.5" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.2.5" />
+    <PackageReference Include="OpenTelemetry" Version="1.12.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.12.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.12.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared.Correlation\Shared.Correlation.csproj" />
+    <ProjectReference Include="..\Shared.MongoDB\Shared.MongoDB.csproj" />
+    <ProjectReference Include="..\Shared.Repositories\Shared.Repositories.csproj" />
+    <ProjectReference Include="..\Shared.Services\Shared.Services.csproj" />
+    <ProjectReference Include="..\Shared.MassTransit\Shared.MassTransit.csproj" />
+  </ItemGroup>
+
+  <!-- Include Shared MongoDB and Services for dependencies -->
+  <ItemGroup>
+    <Compile Include="..\Shared\MongoDB\**\*.cs" Exclude="..\Shared\MongoDB\bin\**;..\Shared\MongoDB\obj\**" />
+    <Compile Include="..\Shared\Services\**\*.cs" Exclude="..\Shared\Services\bin\**;..\Shared\Services\obj\**" />
+  </ItemGroup>
+
+</Project>

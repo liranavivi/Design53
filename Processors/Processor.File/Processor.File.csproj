@@ -1,0 +1,78 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Processor.File</RootNamespace>
+    <AssemblyName>Processor.File</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <Authors>Manager.Schemas Team</Authors>
+    <Description>File processor application for the Manager.Schemas system</Description>
+    <PackageId>Processor.File</PackageId>
+    <Version>3.0.0</Version>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="System.Text.Json" Version="9.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Shared.Entities\Shared.Entities.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.Processor\Shared.Processor.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.Services\Shared.Services.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.Configuration\Shared.Configuration.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.Development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.Production.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- SHA-256 Hash Generation for Processor Implementation Integrity -->
+  <Target Name="GenerateProcessorHash" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <ProcessorImplementationFile>FileProcessorApplication.cs</ProcessorImplementationFile>
+      <HashOutputFile>$(IntermediateOutputPath)ProcessorImplementationHash.cs</HashOutputFile>
+      <HashScriptFile>$(IntermediateOutputPath)GenerateHash.ps1</HashScriptFile>
+    </PropertyGroup>
+
+    <!-- Create PowerShell script to calculate SHA-256 hash -->
+    <WriteLinesToFile File="$(HashScriptFile)" Overwrite="true" Lines="$fileContent = Get-Content -Path '$(ProcessorImplementationFile)' -Raw -Encoding UTF8&#xA;$hasher = [System.Security.Cryptography.SHA256]::Create()&#xA;$hashBytes = $hasher.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($fileContent))&#xA;$hash = [System.BitConverter]::ToString($hashBytes) -replace '-', ''&#xA;Write-Output $hash.ToLower()" />
+
+    <!-- Execute PowerShell script to get hash -->
+    <Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(HashScriptFile)&quot;" ConsoleToMSBuild="true" StandardOutputImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="ProcessorHash" />
+    </Exec>
+
+    <!-- Generate the hash constant class -->
+    <WriteLinesToFile File="$(HashOutputFile)" Overwrite="true" Lines="// Auto-generated during build - DO NOT MODIFY&#xA;using System%3B&#xA;&#xA;namespace $(RootNamespace)%3B&#xA;&#xA;/// &lt;summary&gt;&#xA;/// Auto-generated class containing SHA-256 hash of processor implementation files.&#xA;/// Used for runtime integrity validation to ensure version consistency.&#xA;/// &lt;/summary&gt;&#xA;public static class ProcessorImplementationHash&#xA;{&#xA;    /// &lt;summary&gt;&#xA;    /// SHA-256 hash of the processor implementation file: $(ProcessorImplementationFile)&#xA;    /// &lt;/summary&gt;&#xA;    public static string Hash =&gt; &quot;$(ProcessorHash)&quot;%3B&#xA;&#xA;    /// &lt;summary&gt;&#xA;    /// Processor version from assembly information.&#xA;    /// &lt;/summary&gt;&#xA;    public const string Version = &quot;$(InformationalVersion)&quot;%3B&#xA;&#xA;    /// &lt;summary&gt;&#xA;    /// Processor name from assembly information.&#xA;    /// &lt;/summary&gt;&#xA;    public const string Name = &quot;$(AssemblyName)&quot;%3B&#xA;&#xA;    /// &lt;summary&gt;&#xA;    /// Timestamp when hash was generated.&#xA;    /// &lt;/summary&gt;&#xA;    public const string GeneratedAt = &quot;$([System.DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ss.fffZ'))&quot;%3B&#xA;&#xA;    /// &lt;summary&gt;&#xA;    /// Source file that was hashed.&#xA;    /// &lt;/summary&gt;&#xA;    public const string SourceFile = &quot;$(ProcessorImplementationFile)&quot;%3B&#xA;}" />
+
+    <!-- Include the generated file in compilation -->
+    <ItemGroup>
+      <Compile Include="$(HashOutputFile)" />
+    </ItemGroup>
+
+    <Message Text="Generated SHA-256 hash for $(ProcessorImplementationFile): $(ProcessorHash)" Importance="high" />
+  </Target>
+
+</Project>
+

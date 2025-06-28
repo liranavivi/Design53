@@ -1,0 +1,1029 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Processor Health & Status",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false
+    },
+    {
+      "id": 5,
+      "title": "Memory Usage",
+      "description": "Current memory usage in bytes of the processor.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (processor_composite_key) (processor_memory_usage_bytes_Current_memory_usage_in_bytes{processor_composite_key=~\"$processor_composite_key\"})",
+          "instant": false,
+          "legendFormat": "{{processor_composite_key}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "id": 23,
+      "title": "CPU Usage",
+      "description": "Current CPU usage percentage (0-100) of the processor.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (processor_composite_key) (processor_cpu_usage_percent_Current_CPU_usage_percentage_0_100{processor_composite_key=~\"$processor_composite_key\"})",
+          "instant": false,
+          "legendFormat": "{{processor_composite_key}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      }
+    },
+
+    {
+      "id": 21,
+      "title": "Health Check Rate",
+      "description": "Rate of health checks performed per second by component and status. Shows how frequently each health check is being executed.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (health_check_name, health_check_status, processor_composite_key) (rate(processor_health_checks_Total_number_of_health_checks_performed_total[5m]))",
+          "instant": false,
+          "legendFormat": "{{processor_composite_key}} - {{health_check_name}} ({{health_check_status}})",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Healthy.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Unhealthy.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Degraded.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      }
+    },
+    {
+      "id": 30,
+      "title": "Current Health Status",
+      "description": "Current health status of the processor. Values: 0=Healthy (Green), 1=Degraded (Yellow), 2=Unhealthy (Red).",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (processor_composite_key) (processor_health_status_Current_health_status_of_the_processor_0_Healthy_1_Degraded_2_Unhealthy{processor_composite_key=~\"$processor_composite_key\"})",
+          "instant": true,
+          "legendFormat": "{{processor_composite_key}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "text": "Healthy",
+                  "color": "green"
+                },
+                "1": {
+                  "text": "Degraded",
+                  "color": "yellow"
+                },
+                "2": {
+                  "text": "Unhealthy",
+                  "color": "red"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 22,
+      "title": "Health Status Over Time",
+      "description": "Processor health status trends over time (0=Healthy, 1=Degraded, 2=Unhealthy). Shows when processors become unhealthy or recover.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (processor_composite_key) (processor_health_status_Current_health_status_of_the_processor_0_Healthy_1_Degraded_2_Unhealthy{processor_composite_key=~\"$processor_composite_key\"})",
+          "instant": false,
+          "legendFormat": "{{processor_composite_key}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "text": "Healthy",
+                  "color": "green"
+                },
+                "1": {
+                  "text": "Degraded",
+                  "color": "yellow"
+                },
+                "2": {
+                  "text": "Unhealthy",
+                  "color": "red"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 3,
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 6,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "Health Status",
+            "axisColorMode": "text",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "min": 0,
+          "max": 2
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      }
+    },
+    {
+      "id": 25,
+      "title": "Processor Specific Metrics",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "collapsed": false
+    },
+    {
+      "id": 26,
+      "title": "Processor Uptime",
+      "description": "Total uptime of processor instances in seconds. Shows how long processors have been running.",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (processor_composite_key) (processor_uptime_seconds_Total_uptime_of_the_processor_in_seconds{processor_composite_key=~\"$processor_composite_key\"})",
+          "instant": true,
+          "legendFormat": "{{processor_composite_key}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 18
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 27,
+      "title": "Processor Starts",
+      "description": "Total number of times processors have been started. Shows restart frequency.",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (processor_composite_key) (processor_starts_Total_number_of_times_the_processor_has_been_started_total{processor_composite_key=~\"$processor_composite_key\"})",
+          "instant": true,
+          "legendFormat": "{{processor_composite_key}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 18
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 28,
+      "title": "Cache Active Entries",
+      "description": "Number of active cache entries in processor instances. Shows cache utilization.",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (processor_composite_key) (processor_cache_active_entries_total_Total_number_of_active_cache_entries{processor_composite_key=~\"$processor_composite_key\"})",
+          "instant": true,
+          "legendFormat": "{{processor_composite_key}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 18
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 29,
+      "title": "Cache Average Entry Age",
+      "description": "Average age of cache entries in seconds. Shows cache freshness and turnover rate over time.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (processor_composite_key) (processor_cache_average_entry_age_seconds_Average_age_of_cache_entries_in_seconds{processor_composite_key=~\"$processor_composite_key\"})",
+          "instant": false,
+          "legendFormat": "{{processor_composite_key}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 18
+      }
+    },
+    {
+      "id": 32,
+      "title": "Exceptions",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "collapsed": false
+    },
+    {
+      "id": 30,
+      "title": "Exception Rate",
+      "description": "Rate of exceptions thrown by the processor per second by type and severity. Shows processor error patterns and stability.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (exception_type, severity, processor_composite_key) (rate(processor_exceptions_Total_number_of_exceptions_thrown_by_the_processor_total{processor_composite_key=~\"$processor_composite_key\"}[5m])) or (0 * group by (processor_composite_key) (processor_health_status_Current_health_status_of_the_processor_0_Healthy_1_Degraded_2_Unhealthy{processor_composite_key=~\"$processor_composite_key\"}))",
+          "instant": false,
+          "legendFormat": "{{processor_composite_key}} - {{exception_type}} ({{severity}})",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*critical.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*error.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*warning.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 27
+      }
+    },
+    {
+      "id": 31,
+      "title": "Total Exceptions",
+      "description": "Total number of exceptions thrown by the processor. Shows overall processor stability.",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (processor_composite_key) (processor_exceptions_Total_number_of_exceptions_thrown_by_the_processor_total{processor_composite_key=~\"$processor_composite_key\"}) or (0 * group by (processor_composite_key) (processor_health_status_Current_health_status_of_the_processor_0_Healthy_1_Degraded_2_Unhealthy{processor_composite_key=~\"$processor_composite_key\"}))",
+          "instant": true,
+          "legendFormat": "{{processor_composite_key}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 12,
+        "y": 27
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 39,
+      "title": "Critical Exceptions",
+      "description": "Total number of critical exceptions that affect processor operation. These require immediate attention.",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (processor_composite_key) (processor_critical_exceptions_total{processor_composite_key=~\"$processor_composite_key\"}) or (0 * group by (processor_composite_key) (processor_health_status_Current_health_status_of_the_processor_0_Healthy_1_Degraded_2_Unhealthy{processor_composite_key=~\"$processor_composite_key\"}))",
+          "instant": true,
+          "legendFormat": "{{processor_composite_key}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 20,
+        "y": 27
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 33,
+      "title": "Commands & Events Processing",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "collapsed": false
+    },
+    {
+      "id": 34,
+      "title": "Commands Consumed (Rate)",
+      "description": "Rate of ExecuteActivityCommand messages consumed by the processor per second. Filtered by orchestrated flow ID.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (processor_composite_key, orchestrated_flow_id) (rate(processor_commands_consumed_Total_number_of_ExecuteActivityCommand_messages_consumed_by_the_processor_total{processor_composite_key=~\"$processor_composite_key\",orchestrated_flow_id=~\"$orchestrated_flow_id\"}[5m]))",
+          "instant": false,
+          "legendFormat": "{{processor_composite_key}} | {{orchestrated_flow_id}} - Commands/sec",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 36
+      }
+    },
+    {
+      "id": 35,
+      "title": "Events Published (Rate)",
+      "description": "Rate of activity events published by the processor per second. Filtered by orchestrated flow ID.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (processor_composite_key, orchestrated_flow_id) (rate(processor_events_published_Total_number_of_activity_events_published_by_the_processor_total{processor_composite_key=~\"$processor_composite_key\",orchestrated_flow_id=~\"$orchestrated_flow_id\"}[5m]))",
+          "instant": false,
+          "legendFormat": "{{processor_composite_key}} | {{orchestrated_flow_id}} - Events/sec",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 36
+      }
+    },
+    {
+      "id": 36,
+      "title": "Processing Success Rate",
+      "description": "Success rate percentage of command processing (successful vs total). Filtered by orchestrated flow ID.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(max by (processor_composite_key, orchestrated_flow_id) (processor_commands_consumed_successful_Total_number_of_ExecuteActivityCommand_messages_successfully_consumed_total{processor_composite_key=~\"$processor_composite_key\",orchestrated_flow_id=~\"$orchestrated_flow_id\"}) / max by (processor_composite_key, orchestrated_flow_id) (processor_commands_consumed_Total_number_of_ExecuteActivityCommand_messages_consumed_by_the_processor_total{processor_composite_key=~\"$processor_composite_key\",orchestrated_flow_id=~\"$orchestrated_flow_id\"})) * 100",
+          "instant": false,
+          "legendFormat": "{{processor_composite_key}} | {{orchestrated_flow_id}} - Success Rate",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "max": 100
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 36
+      }
+    },
+    {
+      "id": 38,
+      "title": "Processing Anomaly Detection",
+      "description": "Real-time processing anomaly detection - shows difference between consumed commands and published events. Values > 0 indicate anomalies. Filtered by orchestrated flow ID.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "abs(max by (processor_composite_key, orchestrated_flow_id) (processor_commands_consumed_Total_number_of_ExecuteActivityCommand_messages_consumed_by_the_processor_total{processor_composite_key=~\"$processor_composite_key\",orchestrated_flow_id=~\"$orchestrated_flow_id\"}) - max by (processor_composite_key, orchestrated_flow_id) (processor_events_published_Total_number_of_activity_events_published_by_the_processor_total{processor_composite_key=~\"$processor_composite_key\",orchestrated_flow_id=~\"$orchestrated_flow_id\"}))",
+          "instant": false,
+          "legendFormat": "{{processor_composite_key}} | {{orchestrated_flow_id}} - Flow Anomaly",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 44
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["processor", "metrics", "monitoring", "dotnet"],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": null,
+        "definition": "label_values(processor_health_status_Current_health_status_of_the_processor_0_Healthy_1_Degraded_2_Unhealthy, processor_composite_key)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Processor",
+        "multi": true,
+        "name": "processor_composite_key",
+        "options": [],
+        "query": {
+          "query": "label_values(processor_health_status_Current_health_status_of_the_processor_0_Healthy_1_Degraded_2_Unhealthy, processor_composite_key)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": null,
+        "definition": "label_values(processor_commands_consumed_Total_number_of_ExecuteActivityCommand_messages_consumed_by_the_processor_total, orchestrated_flow_id)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Orchestrated Flow ID",
+        "multi": true,
+        "name": "orchestrated_flow_id",
+        "options": [],
+        "query": {
+          "query": "label_values(processor_commands_consumed_Total_number_of_ExecuteActivityCommand_messages_consumed_by_the_processor_total, orchestrated_flow_id)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Processor Metrics Dashboard - Multi-Instance Monitoring",
+  "uid": "processor-dashboard",
+  "version": 2,
+  "weekStart": ""
+}

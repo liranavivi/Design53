@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Shared.Exceptions</RootNamespace>
+    <AssemblyName>Shared.Exceptions</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <Authors>Manager.Schemas Team</Authors>
+    <Description>Shared exception classes for the Manager.Schemas application</Description>
+    <PackageId>Shared.Exceptions</PackageId>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+</Project>

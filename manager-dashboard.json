@@ -1,0 +1,834 @@
+﻿{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Manager Health & Status",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "title": "Manager Instances",
+      "description": "Count of active manager instances by type. Shows how many instances are currently running and reporting metrics to Prometheus.",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count by (exported_job) (target_info{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": true,
+          "legendFormat": "{{exported_job}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "id": 4,
+      "title": "HTTP Requests Total",
+      "description": "Total number of HTTP requests made by managers. Shows external communication activity level.",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (exported_job) (http_client_request_duration_seconds_count{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": true,
+          "legendFormat": "{{exported_job}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      }
+    },
+    {
+      "id": 5,
+      "title": "Working Set Memory",
+      "description": "Physical memory (RAM) currently used by manager processes. Shows actual memory consumption from the OS perspective.",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (exported_job) (dotnet_process_memory_working_set_bytes{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": true,
+          "legendFormat": "{{exported_job}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      }
+    },
+    {
+      "id": 21,
+      "title": "Manager Health Status",
+      "description": "Aggregated health status showing the last instance for each manager type (0=Healthy, 1=Degraded, 2=Unhealthy). Shows real-time health based on health check results.",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (exported_job) (manager_health_status_Current_health_status_of_the_manager_0_Healthy_1_Degraded_2_Unhealthy{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": true,
+          "legendFormat": "{{exported_job}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "text": "Healthy"
+                },
+                "1": {
+                  "text": "Degraded"
+                },
+                "2": {
+                  "text": "Unhealthy"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "displayName": "${__field.labels.exported_job}"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "AddressManager"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "AddressManager"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      }
+    },
+    {
+      "id": 22,
+      "title": "Health Status Over Time",
+      "description": "Aggregated health status trends over time showing the last instance for each manager type. Shows when managers become unhealthy or recover.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (exported_job) (manager_health_status_Current_health_status_of_the_manager_0_Healthy_1_Degraded_2_Unhealthy{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": false,
+          "legendFormat": "{{exported_job}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisColorMode": "text",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "min": 0,
+          "max": 2
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byValue",
+              "options": {
+                "value": 0
+              }
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byValue",
+              "options": {
+                "value": 1
+              }
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byValue",
+              "options": {
+                "value": 2
+              }
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      }
+    },
+    {
+      "id": 6,
+      "title": "Exceptions",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "collapsed": false
+    },
+    {
+      "id": 7,
+      "title": "Exception Rate by Type",
+      "description": ".NET runtime exceptions by type across all manager instances. Shows rate of exceptions per second to identify problematic areas.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (exported_job, error_type) (rate(dotnet_exceptions_total{exported_job=~\".*Manager\", exported_job=~\"$manager\"}[5m]))",
+          "instant": false,
+          "legendFormat": "{{exported_job}} - {{error_type}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 18
+      }
+    },
+    {
+      "id": 8,
+      "title": "Total Exceptions by Manager",
+      "description": "Total count of all exceptions per manager type. Aggregated across all instances to show overall exception trends.",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (exported_job) (dotnet_exceptions_total{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": false,
+          "legendFormat": "{{exported_job}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 18
+      }
+    },
+    {
+      "id": 9,
+      "title": "Garbage Collection",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "collapsed": false
+    },
+    {
+      "id": 10,
+      "title": "GC Collections by Generation",
+      "description": ".NET garbage collection frequency by generation (Gen0, Gen1, Gen2). Shows GC pressure and memory allocation patterns across all instances.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (exported_job, gc_heap_generation) (rate(dotnet_gc_collections_total{exported_job=~\".*Manager\", exported_job=~\"$manager\"}[5m]))",
+          "instant": false,
+          "legendFormat": "{{exported_job}} - {{gc_heap_generation}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 27
+      }
+    },
+    {
+      "id": 11,
+      "title": "GC Pause Time",
+      "description": "Total time spent in garbage collection pauses. High values indicate GC pressure affecting application performance.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (exported_job) (dotnet_gc_pause_time_seconds_total{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": false,
+          "legendFormat": "{{exported_job}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 27
+      }
+    },
+    {
+      "id": 12,
+      "title": "Heap Allocated Bytes",
+      "description": "Total bytes allocated on the managed heap. Shows memory allocation rate and potential memory leaks.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (exported_job) (dotnet_gc_heap_allocated_bytes_total{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": false,
+          "legendFormat": "{{exported_job}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 27
+      }
+    },
+    {
+      "id": 13,
+      "title": "Memory Usage",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "collapsed": false
+    },
+    {
+      "id": 14,
+      "title": "Working Set Memory",
+      "description": "Physical memory (RAM) currently used by manager processes. Shows actual memory consumption from the OS perspective.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (exported_job) (dotnet_process_memory_working_set_bytes{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": false,
+          "legendFormat": "{{exported_job}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 36
+      }
+    },
+    {
+      "id": 15,
+      "title": "GC Committed Memory",
+      "description": "Memory committed by the garbage collector. Shows managed heap size and memory pressure.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (exported_job) (dotnet_gc_last_collection_memory_committed_size_bytes{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": false,
+          "legendFormat": "{{exported_job}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 36
+      }
+    },
+    {
+      "id": 16,
+      "title": "Heap Fragmentation",
+      "description": "Memory fragmentation in the managed heap by generation. High fragmentation can impact performance and memory efficiency.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (exported_job, gc_heap_generation) (dotnet_gc_last_collection_heap_fragmentation_size_bytes{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": false,
+          "legendFormat": "{{exported_job}} - {{gc_heap_generation}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 36
+      }
+    },
+    {
+      "id": 17,
+      "title": "CPU & Threading",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 44
+      },
+      "collapsed": false
+    },
+    {
+      "id": 18,
+      "title": "CPU Time by Mode",
+      "description": "CPU time consumed by manager processes split by user and system mode. Shows CPU utilization patterns and system call overhead.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (exported_job, cpu_mode) (dotnet_process_cpu_time_seconds_total{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": false,
+          "legendFormat": "{{exported_job}} - {{cpu_mode}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 45
+      }
+    },
+    {
+      "id": 19,
+      "title": "Thread Pool Metrics",
+      "description": "Thread pool statistics including active threads and queue length. Shows threading efficiency and potential bottlenecks.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (exported_job) (dotnet_thread_pool_thread_count_total{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": false,
+          "legendFormat": "{{exported_job}} - Threads",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max by (exported_job) (dotnet_thread_pool_queue_length_total{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": false,
+          "legendFormat": "{{exported_job}} - Queue",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 45
+      }
+    },
+    {
+      "id": 20,
+      "title": "Lock Contentions & Work Items",
+      "description": "Monitor lock contentions and thread pool work items. High contention indicates threading bottlenecks, work items show processing load.",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (exported_job) (dotnet_monitor_lock_contentions_total{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": false,
+          "legendFormat": "{{exported_job}} - Contentions",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (exported_job) (dotnet_thread_pool_work_item_count_total{exported_job=~\".*Manager\", exported_job=~\"$manager\"})",
+          "instant": false,
+          "legendFormat": "{{exported_job}} - Work Items",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 45
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["manager", "metrics", "monitoring", "dotnet"],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": null,
+        "definition": "label_values({exported_job=~\".*Manager\"}, exported_job)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Manager",
+        "multi": true,
+        "name": "manager",
+        "options": [],
+        "query": {
+          "query": "label_values({exported_job=~\".*Manager\"}, exported_job)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Manager Metrics Dashboard - Multi-Instance Monitoring",
+  "uid": "manager-dashboard",
+  "version": 1,
+  "weekStart": ""
+}
+
+
