@@ -224,27 +224,15 @@ public class FileProcessorApplication : BaseProcessorApplication
             "Input metadata - DataReceived: {InputDataReceived}, MetadataReceived: {InputMetadataReceived}, SampleData: {InputSampleData}, EntityTypes: {InputEntityTypes}",
             inputDataReceived, inputMetadataReceived, inputSampleData, string.Join(", ", inputEntityTypes));
 
-        // Process entities generically without specific type handling
-        string sampleData = "No entities to process";
-        if (entities.Any())
+        // Extract all validatable entities using the interface
+        var validatableEntities = entities
+            .OfType<IValidatableAssignmentModel>()
+            .ToList();
+
+        foreach (var assignmentEntity in validatableEntities)
         {
-            logger.LogInformationWithCorrelation(
-                "Processing {EntityCount} entities of types: {EntityTypes}",
-                entities.Count,
-                string.Join(", ", entities.Select(e => e.GetType().Name).Distinct()));
-
-            // Use first entity for sample processing if available
-            var firstEntity = entities.First();
-            sampleData = $"Processed entity: {firstEntity.GetType().Name} (EntityId: {firstEntity.EntityId})";
+            inputSampleData += $"The Step {stepId}  -----   "+ assignmentEntity.GetValidatableModel().Payload + Environment.NewLine;
         }
-
-        inputSampleData += $"The Step {stepId}" + Environment.NewLine;
-
-        // Log processing summary including input data information
-        logger.LogInformationWithCorrelation(
-            "Completed processing entities. Total: {TotalEntities}, SampleData: {SampleData}, InputSampleData: {InputSampleData}",
-            entities.Count, sampleData, inputSampleData);
-
 
         // Create ProcessedActivityData.Data example for testing schemas between orchestrator and processor
         var processedActivityData = new
