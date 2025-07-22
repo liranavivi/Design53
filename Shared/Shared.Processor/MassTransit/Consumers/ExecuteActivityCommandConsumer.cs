@@ -119,62 +119,72 @@ public class ExecuteActivityCommandConsumer : IConsumer<ExecuteActivityCommand>
                 ExecutionId = command.ExecutionId,
                 Entities = command.Entities,
                 CorrelationId = correlationId, // Use extracted correlation ID
-                PreviousStepId = command.PreviousStepId,
+                PublishId = command.PublishId,
                 CreatedAt = command.CreatedAt
             };
 
             // Process the activity
-            var response = await _processorService.ProcessActivityAsync(activityMessage);
+            var responses = await _processorService.ProcessActivityAsync(activityMessage);
 
             stopwatch.Stop();
 
-            // Set success telemetry
-            activity?.SetTag(ActivityTags.ActivityStatus, response.Status.ToString())
-                    ?.SetTag(ActivityTags.ActivityDuration, stopwatch.ElapsedMilliseconds);
+            // Process each response and publish corresponding events
+            foreach (var response in responses)
+            {
+                // Set success telemetry for this response
+                activity?.SetTag($"ActivityStatus_{response.ExecutionId}", response.Status.ToString());
+
+                _logger.LogInformationWithCorrelation(
+                    "Workflow step item completed. OrchestratedFlowEntityId: {OrchestratedFlowEntityId}, StepId: {StepId}, OriginalExecutionId: {OriginalExecutionId}, ResultExecutionId: {ResultExecutionId}, ProcessorId: {ProcessorId}, WorkflowPhase: {WorkflowPhase}, Status: {Status}, Duration: {Duration}ms",
+                    command.OrchestratedFlowEntityId, command.StepId, command.ExecutionId, response.ExecutionId, command.ProcessorId, "ActivityItemCompleted", response.Status, stopwatch.ElapsedMilliseconds);
+
+                // Publish domain event based on execution result
+                if (response.Status == ActivityExecutionStatus.Completed)
+                {
+                    await context.Publish(new ActivityExecutedEvent
+                    {
+                        ProcessorId = command.ProcessorId,
+                        OrchestratedFlowEntityId = command.OrchestratedFlowEntityId,
+                        StepId = command.StepId,
+                        ExecutionId = response.ExecutionId, // Use the unique ExecutionId from the response
+                        CorrelationId = correlationId, // Use extracted correlation ID
+                        PublishId = command.PublishId,
+                        Duration = response.Duration,
+                        Status = response.Status,
+                        EntitiesProcessed = command.Entities.Count,
+                    });
+
+                    // Record successful event publishing
+                    _flowMetricsService?.RecordEventPublished(true, "ActivityExecutedEvent", _config.Name, _config.Version, command.OrchestratedFlowEntityId);
+                }
+                else
+                {
+                    // Publish failure event
+                    await context.Publish(new ActivityFailedEvent
+                    {
+                        ProcessorId = command.ProcessorId,
+                        OrchestratedFlowEntityId = command.OrchestratedFlowEntityId,
+                        StepId = command.StepId,
+                        ExecutionId = response.ExecutionId, // Use the unique ExecutionId from the response
+                        CorrelationId = correlationId, // Use extracted correlation ID
+                        PublishId = command.PublishId,
+                        Duration = response.Duration,
+                        ErrorMessage = response.ErrorMessage ?? "Unknown error",
+                        EntitiesBeingProcessed = command.Entities.Count,
+                    });
+
+                    // Record successful event publishing (even for failure events)
+                    _flowMetricsService?.RecordEventPublished(true, "ActivityFailedEvent", _config.Name, _config.Version, command.OrchestratedFlowEntityId);
+                }
+            }
+
+            // Set overall telemetry
+            activity?.SetTag(ActivityTags.ActivityDuration, stopwatch.ElapsedMilliseconds)
+                    ?.SetTag("ResponseCount", responses.Count());
 
             _logger.LogInformationWithCorrelation(
-                "Workflow step completed. OrchestratedFlowEntityId: {OrchestratedFlowEntityId}, StepId: {StepId}, ExecutionId: {ExecutionId}, ProcessorId: {ProcessorId}, WorkflowPhase: {WorkflowPhase}, Status: {Status}, Duration: {Duration}ms, ResultExecutionId: {ResultExecutionId}",
-                command.OrchestratedFlowEntityId, command.StepId, command.ExecutionId, command.ProcessorId, "ActivityCompleted", response.Status, stopwatch.ElapsedMilliseconds, response.ExecutionId);
-
-            
-            // Publish domain event based on execution result
-            if (response.Status == ActivityExecutionStatus.Completed)
-            {
-                await context.Publish(new ActivityExecutedEvent
-                {
-                    ProcessorId = command.ProcessorId,
-                    OrchestratedFlowEntityId = command.OrchestratedFlowEntityId,
-                    StepId = command.StepId,
-                    ExecutionId = response.ExecutionId,
-                    CorrelationId = correlationId, // Use extracted correlation ID
-                    PreviousStepId = command.PreviousStepId,
-                    Duration = response.Duration,
-                    Status = response.Status,
-                    EntitiesProcessed = command.Entities.Count,
-                });
-
-                // Record successful event publishing
-                _flowMetricsService?.RecordEventPublished(true, "ActivityExecutedEvent", _config.Name, _config.Version, command.OrchestratedFlowEntityId);
-            }
-            else
-            {
-                // Publish failure event
-                await context.Publish(new ActivityFailedEvent
-                {
-                    ProcessorId = command.ProcessorId,
-                    OrchestratedFlowEntityId = command.OrchestratedFlowEntityId,
-                    StepId = command.StepId,
-                    ExecutionId = command.ExecutionId,
-                    CorrelationId = correlationId, // Use extracted correlation ID
-                    PreviousStepId = command.PreviousStepId,
-                    Duration = response.Duration,
-                    ErrorMessage = response.ErrorMessage ?? "Unknown error",
-                    EntitiesBeingProcessed = command.Entities.Count,
-                });
-
-                // Record successful event publishing (even for failure events)
-                _flowMetricsService?.RecordEventPublished(true, "ActivityFailedEvent", _config.Name, _config.Version, command.OrchestratedFlowEntityId);
-            }
+                "Workflow step collection completed. OrchestratedFlowEntityId: {OrchestratedFlowEntityId}, StepId: {StepId}, OriginalExecutionId: {OriginalExecutionId}, ProcessorId: {ProcessorId}, WorkflowPhase: {WorkflowPhase}, ResponseCount: {ResponseCount}, Duration: {Duration}ms",
+                command.OrchestratedFlowEntityId, command.StepId, command.ExecutionId, command.ProcessorId, "ActivityCollectionCompleted", responses.Count(), stopwatch.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {
@@ -203,7 +213,7 @@ public class ExecuteActivityCommandConsumer : IConsumer<ExecuteActivityCommand>
                 StepId = command.StepId,
                 ExecutionId = command.ExecutionId,
                 CorrelationId = correlationId, // Use extracted correlation ID
-                PreviousStepId = command.PreviousStepId,
+                PublishId = command.PublishId,
                 Duration = stopwatch.Elapsed,
                 ErrorMessage = ex.Message,
                 ExceptionType = ex.GetType().Name,

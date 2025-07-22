@@ -31,7 +31,7 @@ public abstract class BaseProcessorApplication : IActivityExecutor
     /// <summary>
     /// Main implementation of activity execution that handles common patterns
     /// </summary>
-    public virtual async Task<ActivityExecutionResult> ExecuteActivityAsync(
+    public virtual async Task<IEnumerable<ActivityExecutionResult>> ExecuteActivityAsync(
         Guid processorId,
         Guid orchestratedFlowEntityId,
         Guid stepId,
@@ -43,10 +43,11 @@ public abstract class BaseProcessorApplication : IActivityExecutor
     {
         var logger = ServiceProvider.GetRequiredService<ILogger<BaseProcessorApplication>>();
         var stopwatch = Stopwatch.StartNew();
+        var results = new List<ActivityExecutionResult>();
 
         try
         {
-            var processedData = await ProcessActivityDataAsync(
+            var processedDataCollection = await ProcessActivityDataAsync(
                 processorId,
                 orchestratedFlowEntityId,
                 stepId,
@@ -58,43 +59,80 @@ public abstract class BaseProcessorApplication : IActivityExecutor
 
             stopwatch.Stop();
 
-            // Serialize only the Data property to JSON
-            var serializedData = JsonSerializer.Serialize(processedData.Data, new JsonSerializerOptions
+            // Process each ProcessedActivityData item
+            foreach (var processedData in processedDataCollection)
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = true
-            });
+                try
+                {
+                    // Serialize only the Data property to JSON for this item
+                    var serializedData = JsonSerializer.Serialize(processedData.Data, new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        WriteIndented = true
+                    });
 
-            // Return new structure with all info + serialized data
-            return new ActivityExecutionResult
-            {
-                Result = processedData.Result ?? "Processing completed successfully",
-                Status = processedData.Status ?? ActivityExecutionStatus.Completed,
-                Duration = stopwatch.Elapsed,
-                ProcessorName = processedData.ProcessorName ?? GetType().Name,
-                Version = processedData.Version ?? "1.0",
-                ExecutionId = processedData.ExecutionId == Guid.Empty ? executionId : processedData.ExecutionId,
-                SerializedData = serializedData
-            };
+                    // Create ActivityExecutionResult for this item
+                    var result = new ActivityExecutionResult
+                    {
+                        Result = processedData.Result ?? "Processing completed successfully",
+                        Status = processedData.Status ?? ActivityExecutionStatus.Completed,
+                        Duration = stopwatch.Elapsed,
+                        ProcessorName = processedData.ProcessorName ?? GetType().Name,
+                        Version = processedData.Version ?? "1.0",
+                        ExecutionId = processedData.ExecutionId == Guid.Empty ? Guid.NewGuid() : processedData.ExecutionId,
+                        SerializedData = serializedData
+                    };
+
+                    results.Add(result);
+                }
+                catch (Exception itemEx)
+                {
+                    logger.LogErrorWithCorrelation(itemEx, "Failed to process individual item. ExecutionId: {ExecutionId}", processedData.ExecutionId);
+
+                    // Record exception metrics for this item
+                    var healthMetricsService = ServiceProvider?.GetService<IProcessorHealthMetricsService>();
+                    healthMetricsService?.RecordException(itemEx.GetType().Name, "error", isCritical: false);
+
+                    // Add failed result for this item
+                    var failedResult = new ActivityExecutionResult
+                    {
+                        Result = $"Item processing failed: {itemEx.Message}",
+                        Status = ActivityExecutionStatus.Failed,
+                        Duration = stopwatch.Elapsed,
+                        ProcessorName = GetType().Name,
+                        Version = "1.0",
+                        ExecutionId = processedData.ExecutionId == Guid.Empty ? Guid.NewGuid() : processedData.ExecutionId,
+                        SerializedData = "{}" // Empty JSON object for failed processing
+                    };
+
+                    results.Add(failedResult);
+                }
+            }
+
+            return results;
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
-            logger.LogErrorWithCorrelation(ex, "Activity execution failed");
+            logger.LogErrorWithCorrelation(ex, "Activity execution failed completely");
 
             // Record exception metrics
             var healthMetricsService = ServiceProvider?.GetService<IProcessorHealthMetricsService>();
             healthMetricsService?.RecordException(ex.GetType().Name, "error", isCritical: true);
 
-            return new ActivityExecutionResult
+            // Return single failed result when entire processing fails
+            return new[]
             {
-                Result = $"Processing failed: {ex.Message}",
-                Status = ActivityExecutionStatus.Failed,
-                Duration = stopwatch.Elapsed,
-                ProcessorName = GetType().Name,
-                Version = "1.0",
-                ExecutionId = executionId,
-                SerializedData = "{}" // Empty JSON object for failed processing
+                new ActivityExecutionResult
+                {
+                    Result = $"Processing failed: {ex.Message}",
+                    Status = ActivityExecutionStatus.Failed,
+                    Duration = stopwatch.Elapsed,
+                    ProcessorName = GetType().Name,
+                    Version = "1.0",
+                    ExecutionId = executionId,
+                    SerializedData = "{}" // Empty JSON object for failed processing
+                }
             };
         }
     }
@@ -102,17 +140,18 @@ public abstract class BaseProcessorApplication : IActivityExecutor
     /// <summary>
     /// Abstract method that concrete processor implementations must override
     /// This is where the specific processor business logic should be implemented
+    /// Returns a collection of ProcessedActivityData, each with a unique ExecutionId
     /// </summary>
     /// <param name="processorId">ID of the processor executing the activity</param>
     /// <param name="orchestratedFlowEntityId">ID of the orchestrated flow entity</param>
     /// <param name="stepId">ID of the step being executed</param>
-    /// <param name="executionId">Unique execution ID for this activity instance</param>
+    /// <param name="executionId">Original execution ID for this activity instance</param>
     /// <param name="entities">Collection of base entities to process</param>
     /// <param name="inputData">Parsed input data object</param>
     /// <param name="correlationId">Optional correlation ID for tracking</param>
     /// <param name="cancellationToken">Cancellation token for the operation</param>
-    /// <returns>Processed data that will be incorporated into the standard result structure</returns>
-    protected abstract Task<ProcessedActivityData> ProcessActivityDataAsync(
+    /// <returns>Collection of processed data, each with unique ExecutionId, that will be incorporated into the standard result structure</returns>
+    protected abstract Task<IEnumerable<ProcessedActivityData>> ProcessActivityDataAsync(
         Guid processorId,
         Guid orchestratedFlowEntityId,
         Guid stepId,

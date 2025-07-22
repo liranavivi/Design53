@@ -702,10 +702,10 @@ public class ProcessorService : IProcessorService
         return _processorId.Value.ToString();
     }
 
-    public async Task<string?> GetCachedDataAsync(Guid orchestratedFlowEntityId, Guid correlationId, Guid executionId, Guid stepId , Guid previousStepId )
+    public async Task<string?> GetCachedDataAsync(Guid orchestratedFlowEntityId, Guid correlationId, Guid executionId, Guid stepId , Guid publishId )
     {
         var mapName = GetCacheMapName();
-        var key = _cacheService.GetCacheKey(orchestratedFlowEntityId, correlationId, executionId, stepId, previousStepId);
+        var key = _cacheService.GetCacheKey(orchestratedFlowEntityId, correlationId, executionId, stepId, publishId);
 
         _logger.LogDebugWithCorrelation("Retrieving cached data. MapName: {MapName}, ExecutionId: {ExecutionId}, StepId: {StepId}, OrchestratedFlowEntityId: {OrchestratedFlowEntityId}",
             mapName, executionId, stepId, orchestratedFlowEntityId);
@@ -718,10 +718,10 @@ public class ProcessorService : IProcessorService
         return result;
     }
 
-    public async Task SaveCachedDataAsync(Guid orchestratedFlowEntityId, Guid correlationId, Guid executionId, Guid stepId , Guid previousStepId, string data)
+    public async Task SaveCachedDataAsync(Guid orchestratedFlowEntityId, Guid correlationId, Guid executionId, Guid stepId , Guid publishId, string data)
     {
         var mapName = GetCacheMapName();
-        var key = _cacheService.GetCacheKey(orchestratedFlowEntityId, correlationId, executionId, stepId, previousStepId);
+        var key = _cacheService.GetCacheKey(orchestratedFlowEntityId, correlationId, executionId, stepId, publishId);
 
         _logger.LogDebugWithCorrelation("Saving cached data. MapName: {MapName}, ExecutionId: {ExecutionId}, StepId: {StepId}, OrchestratedFlowEntityId: {OrchestratedFlowEntityId}, DataLength: {DataLength}",
             mapName, executionId, stepId, orchestratedFlowEntityId, data.Length);
@@ -764,7 +764,7 @@ public class ProcessorService : IProcessorService
         return await _schemaValidator.ValidateAsync(data, _config.OutputSchemaDefinition);
     }
 
-    public async Task<ProcessorActivityResponse> ProcessActivityAsync(ProcessorActivityMessage message)
+    public async Task<IEnumerable<ProcessorActivityResponse>> ProcessActivityAsync(ProcessorActivityMessage message)
     {
         using var activity = _activitySource.StartActivityWithCorrelation("ProcessActivity");
         var stopwatch = Stopwatch.StartNew();
@@ -799,16 +799,16 @@ public class ProcessorService : IProcessorService
                 inputData = await GetCachedDataAsync(
                     message.OrchestratedFlowEntityId,
                     message.CorrelationId,
-                    message.ExecutionId, 
+                    message.ExecutionId,
                     message.StepId,
-                    message.PreviousStepId) ?? string.Empty;
+                    message.PublishId) ?? string.Empty;
 
                 if (string.IsNullOrEmpty(inputData))
                 {
                     _logger.LogErrorWithCorrelation(
-                        "No input data found in cache. ProcessorId: {ProcessorId}, ExecutionId: {ExecutionId}, StepId: {StepId}, OrchestratedFlowEntityId: {OrchestratedFlowEntityId}, PreviousStepId: {PreviousStepId}, CacheKey: {CacheKey}",
-                        message.ProcessorId, message.ExecutionId, message.StepId, message.OrchestratedFlowEntityId, message.PreviousStepId,
-                        _cacheService.GetCacheKey(message.OrchestratedFlowEntityId, message.CorrelationId, message.ExecutionId, message.StepId, message.PreviousStepId));
+                        "No input data found in cache. ProcessorId: {ProcessorId}, ExecutionId: {ExecutionId}, StepId: {StepId}, OrchestratedFlowEntityId: {OrchestratedFlowEntityId}, PublishId: {PublishId}, CacheKey: {CacheKey}",
+                        message.ProcessorId, message.ExecutionId, message.StepId, message.OrchestratedFlowEntityId, message.PublishId,
+                        _cacheService.GetCacheKey(message.OrchestratedFlowEntityId, message.CorrelationId, message.ExecutionId, message.StepId, message.PublishId));
 
                     throw new InvalidOperationException(
                         $"No input data found in cache for ExecutionId: {message.ExecutionId}, StepId: {message.StepId}");
@@ -833,8 +833,8 @@ public class ProcessorService : IProcessorService
             await ValidateAssignmentEntitiesAsync(message.Entities);
 
             // 3. Execute the activity
-            
-            var resultData = await _activityExecutor.ExecuteActivityAsync(
+
+            var resultDataCollection = await _activityExecutor.ExecuteActivityAsync(
                 message.ProcessorId,
                 message.OrchestratedFlowEntityId,
                 message.StepId,
@@ -843,36 +843,84 @@ public class ProcessorService : IProcessorService
                 inputData,
                 message.CorrelationId);
 
-            // 5. Validate output data against OutputSchema
-            if (!await ValidateOutputDataAsync(resultData.SerializedData))
-            {
-                var errorMessage = "Output data validation failed against OutputSchema";
-                _logger.LogErrorWithCorrelation(
-                    "{ErrorMessage}. ProcessorId: {ProcessorId}, ExecutionId: {ExecutionId}, StepId: {StepId}, OrchestratedFlowEntityId: {OrchestratedFlowEntityId}",
-                    errorMessage, message.ProcessorId, resultData.ExecutionId, message.StepId, message.OrchestratedFlowEntityId);
+            var responses = new List<ProcessorActivityResponse>();
 
-                if (_validationConfig.FailOnValidationError)
+            // Process each result item
+            foreach (var resultData in resultDataCollection)
+            {
+                try
                 {
-                    throw new InvalidOperationException($"{errorMessage} for ExecutionId: {resultData.ExecutionId}");
-                }
-            }
+                    // 5. Validate output data against OutputSchema for this item
+                    if (!await ValidateOutputDataAsync(resultData.SerializedData))
+                    {
+                        var errorMessage = "Output data validation failed against OutputSchema";
+                        _logger.LogErrorWithCorrelation(
+                            "{ErrorMessage}. ProcessorId: {ProcessorId}, ExecutionId: {ExecutionId}, StepId: {StepId}, OrchestratedFlowEntityId: {OrchestratedFlowEntityId}",
+                            errorMessage, message.ProcessorId, resultData.ExecutionId, message.StepId, message.OrchestratedFlowEntityId);
 
-            // 6. Save result data to cache (skip if final ExecutionId is empty)
-            if (resultData.ExecutionId != Guid.Empty)
-            {
-                await SaveCachedDataAsync(
-                    message.OrchestratedFlowEntityId,
-                    message.CorrelationId,
-                    resultData.ExecutionId,
-                    message.StepId,
-                    message.PreviousStepId,
-                    resultData.SerializedData);
-            }
-            else
-            {
-                _logger.LogWarningWithCorrelation(
-                    "ExecutionId is empty - skipping cache save. ProcessorId: {ProcessorId}, OrchestratedFlowEntityId: {OrchestratedFlowEntityId}, StepId: {StepId}, OriginalExecutionId: {OriginalExecutionId}",
-                    message.ProcessorId, message.OrchestratedFlowEntityId, message.StepId, message.ExecutionId);
+                        if (_validationConfig.FailOnValidationError)
+                        {
+                            throw new InvalidOperationException($"{errorMessage} for ExecutionId: {resultData.ExecutionId}");
+                        }
+                    }
+
+                    // 6. Save result data to cache (skip if final ExecutionId is empty)
+                    if (resultData.ExecutionId != Guid.Empty)
+                    {
+                        await SaveCachedDataAsync(
+                            message.OrchestratedFlowEntityId,
+                            message.CorrelationId,
+                            resultData.ExecutionId,
+                            message.StepId,
+                            message.PublishId,
+                            resultData.SerializedData);
+                    }
+                    else
+                    {
+                        _logger.LogWarningWithCorrelation(
+                            "ExecutionId is empty - skipping cache save. ProcessorId: {ProcessorId}, OrchestratedFlowEntityId: {OrchestratedFlowEntityId}, StepId: {StepId}, OriginalExecutionId: {OriginalExecutionId}",
+                            message.ProcessorId, message.OrchestratedFlowEntityId, message.StepId, message.ExecutionId);
+                    }
+
+                    // Create successful response for this item
+                    var response = new ProcessorActivityResponse
+                    {
+                        ProcessorId = message.ProcessorId,
+                        OrchestratedFlowEntityId = message.OrchestratedFlowEntityId,
+                        StepId = message.StepId,
+                        ExecutionId = resultData.ExecutionId,
+                        Status = ActivityExecutionStatus.Completed,
+                        CorrelationId = message.CorrelationId,
+                        Duration = stopwatch.Elapsed
+                    };
+
+                    responses.Add(response);
+
+                    _logger.LogInformationWithCorrelation(
+                        "Successfully processed activity item. ProcessorId: {ProcessorId}, OrchestratedFlowEntityId: {OrchestratedFlowEntityId}, StepId: {StepId}, ExecutionId: {ExecutionId}",
+                        message.ProcessorId, message.OrchestratedFlowEntityId, message.StepId, resultData.ExecutionId);
+                }
+                catch (Exception itemEx)
+                {
+                    _logger.LogErrorWithCorrelation(itemEx,
+                        "Failed to process activity item. ProcessorId: {ProcessorId}, OrchestratedFlowEntityId: {OrchestratedFlowEntityId}, StepId: {StepId}, ExecutionId: {ExecutionId}",
+                        message.ProcessorId, message.OrchestratedFlowEntityId, message.StepId, resultData.ExecutionId);
+
+                    // Create failed response for this item
+                    var failedResponse = new ProcessorActivityResponse
+                    {
+                        ProcessorId = message.ProcessorId,
+                        OrchestratedFlowEntityId = message.OrchestratedFlowEntityId,
+                        StepId = message.StepId,
+                        ExecutionId = resultData.ExecutionId,
+                        Status = ActivityExecutionStatus.Failed,
+                        CorrelationId = message.CorrelationId,
+                        ErrorMessage = itemEx.Message,
+                        Duration = stopwatch.Elapsed
+                    };
+
+                    responses.Add(failedResponse);
+                }
             }
 
             stopwatch.Stop();
@@ -884,19 +932,10 @@ public class ProcessorService : IProcessorService
                     ?.SetTag(ActivityTags.ActivityDuration, stopwatch.ElapsedMilliseconds);
 
             _logger.LogInformationWithCorrelation(
-                "Successfully processed activity. ProcessorId: {ProcessorId}, OrchestratedFlowEntityId: {OrchestratedFlowEntityId}, StepId: {StepId}, ExecutionId: {ExecutionId}, Duration: {Duration}ms",
-                message.ProcessorId, message.OrchestratedFlowEntityId, message.StepId, resultData.ExecutionId, stopwatch.ElapsedMilliseconds);
+                "Successfully processed activity collection. ProcessorId: {ProcessorId}, OrchestratedFlowEntityId: {OrchestratedFlowEntityId}, StepId: {StepId}, ItemCount: {ItemCount}, Duration: {Duration}ms",
+                message.ProcessorId, message.OrchestratedFlowEntityId, message.StepId, responses.Count, stopwatch.ElapsedMilliseconds);
 
-            return new ProcessorActivityResponse
-            {
-                ProcessorId = message.ProcessorId,
-                OrchestratedFlowEntityId = message.OrchestratedFlowEntityId,
-                StepId = message.StepId,
-                ExecutionId = resultData.ExecutionId,
-                Status = ActivityExecutionStatus.Completed,
-                CorrelationId = message.CorrelationId,
-                Duration = stopwatch.Elapsed
-            };
+            return responses;
         }
         catch (Exception ex)
         {
@@ -917,16 +956,19 @@ public class ProcessorService : IProcessorService
                 message.ProcessorId, message.OrchestratedFlowEntityId, message.StepId, message.ExecutionId, stopwatch.ElapsedMilliseconds);
 
             var processorId = _processorId ?? Guid.Empty;
-            return new ProcessorActivityResponse
+            return new[]
             {
-                ProcessorId = processorId,
-                OrchestratedFlowEntityId = message.OrchestratedFlowEntityId,
-                StepId = message.StepId,
-                ExecutionId = message.ExecutionId,
-                Status = ActivityExecutionStatus.Failed,
-                CorrelationId = message.CorrelationId,
-                ErrorMessage = ex.Message,
-                Duration = stopwatch.Elapsed
+                new ProcessorActivityResponse
+                {
+                    ProcessorId = processorId,
+                    OrchestratedFlowEntityId = message.OrchestratedFlowEntityId,
+                    StepId = message.StepId,
+                    ExecutionId = message.ExecutionId,
+                    Status = ActivityExecutionStatus.Failed,
+                    CorrelationId = message.CorrelationId,
+                    ErrorMessage = ex.Message,
+                    Duration = stopwatch.Elapsed
+                }
             };
         }
     }

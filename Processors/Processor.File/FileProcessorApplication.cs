@@ -61,8 +61,9 @@ public class FileProcessorApplication : BaseProcessorApplication
     /// Concrete implementation of the activity processing logic
     /// This is where the specific processor business logic is implemented
     /// Handles input parsing and validation internally
+    /// Returns a collection with a single item containing a new ExecutionId
     /// </summary>
-    protected override async Task<ProcessedActivityData> ProcessActivityDataAsync(
+    protected override async Task<IEnumerable<ProcessedActivityData>> ProcessActivityDataAsync(
         Guid processorId,
         Guid orchestratedFlowEntityId,
         Guid stepId,
@@ -258,14 +259,17 @@ public class FileProcessorApplication : BaseProcessorApplication
         };
 
         // Return processed data incorporating deserialized local variables
-        return new ProcessedActivityData
+        // Return collection with single item containing new ExecutionId as specified
+        var singleResult = new ProcessedActivityData
         {
             Result = "File processing completed successfully",
             Status = ActivityExecutionStatus.Completed,
             Data = processedActivityData,
             ProcessorName = "EnhancedFileProcessor",
             Version = "3.0",
-            ExecutionId = executionId == Guid.Empty ? Guid.NewGuid() : executionId
+            ExecutionId = Guid.NewGuid() // Always generate new ExecutionId as specified
         };
+
+        return new[] { singleResult };
     }
 }

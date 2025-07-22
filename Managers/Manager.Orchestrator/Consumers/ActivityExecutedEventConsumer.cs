@@ -176,7 +176,7 @@ public class ActivityExecutedEventConsumer : IConsumer<ActivityExecutedEvent>
         {
             // Delete cache processor data using the standardized cache key method
             var mapName = activityEvent.ProcessorId.ToString();
-            var key = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, activityEvent.StepId, activityEvent.PreviousStepId);
+            var key = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, activityEvent.StepId, activityEvent.PublishId);
 
             await _rawCacheService.RemoveAsync(mapName, key);
 
@@ -252,17 +252,20 @@ public class ActivityExecutedEventConsumer : IConsumer<ActivityExecutedEvent>
                 return;
             }
 
-            // Step 4.1: Copy cache processor data from source to destination
-            await CopyCacheProcessorDataAsync(activityEvent, nextStepId, nextStepEntity.ProcessorId);
+            // Step 4.1: Generate new publishId for each command publication
+            var publishId = Guid.NewGuid();
 
-            // Step 4.2: Get assignments for next step
+            // Step 4.2: Copy cache processor data from source to destination
+            await CopyCacheProcessorDataAsync(activityEvent, nextStepId, nextStepEntity.ProcessorId, publishId);
+
+            // Step 4.3: Get assignments for next step
             var assignmentModels = new List<AssignmentModel>();
             if (orchestrationData.AssignmentManager.Assignments.TryGetValue(nextStepId, out var assignments))
             {
                 assignmentModels.AddRange(assignments);
             }
 
-            // Step 4.3: Compose and publish ExecuteActivityCommand
+            // Step 4.4: Compose and publish ExecuteActivityCommand
             var command = new ExecuteActivityCommand
             {
                 ProcessorId = nextStepEntity.ProcessorId,
@@ -271,7 +274,7 @@ public class ActivityExecutedEventConsumer : IConsumer<ActivityExecutedEvent>
                 ExecutionId = activityEvent.ExecutionId,
                 Entities = assignmentModels,
                 CorrelationId = activityEvent.CorrelationId,
-                PreviousStepId = activityEvent.StepId // The step that just completed is the previous step
+                PublishId = publishId // Use generated publishId instead of step relationship
             };
 
             var publishStopwatch = Stopwatch.StartNew();
@@ -312,8 +315,9 @@ public class ActivityExecutedEventConsumer : IConsumer<ActivityExecutedEvent>
     /// <param name="activityEvent">The activity executed event</param>
     /// <param name="nextStepId">The next step ID</param>
     /// <param name="destinationProcessorId">The destination processor ID</param>
-    
-    private async Task CopyCacheProcessorDataAsync(ActivityExecutedEvent activityEvent, Guid nextStepId, Guid destinationProcessorId)
+    /// <param name="publishId">The generated publish ID for the destination</param>
+
+    private async Task CopyCacheProcessorDataAsync(ActivityExecutedEvent activityEvent, Guid nextStepId, Guid destinationProcessorId, Guid publishId)
     {
         using var activity = ActivitySource.StartActivity("CopyCacheProcessorData");
         activity?.SetTag("sourceProcessorId", activityEvent.ProcessorId.ToString())
@@ -324,11 +328,11 @@ public class ActivityExecutedEventConsumer : IConsumer<ActivityExecutedEvent>
         {
             // Source cache location
             var sourceMapName = activityEvent.ProcessorId.ToString();
-            var sourceKey = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, activityEvent.StepId, activityEvent.PreviousStepId);
+            var sourceKey = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, activityEvent.StepId, activityEvent.PublishId);
 
-            // Destination cache location (previous step for next step is the current step)
+            // Destination cache location (use generated publishId for destination)
             var destinationMapName = destinationProcessorId.ToString();
-            var destinationKey = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, nextStepId, activityEvent.StepId);
+            var destinationKey = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, nextStepId, publishId);
 
             // Copy data from source to destination
             var sourceData = await _rawCacheService.GetAsync(sourceMapName, sourceKey);
@@ -384,7 +388,7 @@ public class ActivityExecutedEventConsumer : IConsumer<ActivityExecutedEvent>
         try
         {
             var sourceMapName = activityEvent.ProcessorId.ToString();
-            var sourceKey = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, activityEvent.StepId, activityEvent.PreviousStepId);
+            var sourceKey = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, activityEvent.StepId, activityEvent.PublishId);
 
             await _rawCacheService.RemoveAsync(sourceMapName, sourceKey);
 

@@ -219,7 +219,7 @@ public class OrchestratedFlowJob : IJob
                     ExecutionId = executionId,
                     Entities = assignmentModels,
                     CorrelationId = correlationId,
-                    PreviousStepId = Guid.Empty // Entry points have no previous step
+                    PublishId = Guid.Empty // Entry points have publishId = Guid.Empty
                 };
 
                 _logger.LogInformationWithCorrelation("Workflow step initiated. OrchestratedFlowId: {OrchestratedFlowId}, StepId: {StepId}, ExecutionId: {ExecutionId}, ProcessorId: {ProcessorId}, WorkflowPhase: {WorkflowPhase}, AssignmentCount: {AssignmentCount}",

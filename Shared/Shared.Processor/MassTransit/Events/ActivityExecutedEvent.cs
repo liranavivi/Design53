@@ -34,9 +34,9 @@ public class ActivityExecutedEvent
     public Guid CorrelationId { get; init; } = Guid.Empty;
 
     /// <summary>
-    /// ID of the previous step that led to this step execution (Guid.Empty for entry points)
+    /// Unique publish ID that was used for this execution (Guid.Empty for entry points)
     /// </summary>
-    public Guid PreviousStepId { get; init; } = Guid.Empty;
+    public Guid PublishId { get; init; } = Guid.Empty;
 
     /// <summary>
     /// Timestamp when the activity was executed
@@ -95,9 +95,9 @@ public class ActivityFailedEvent
     public Guid CorrelationId { get; init; }
 
     /// <summary>
-    /// ID of the previous step that led to this step execution (Guid.Empty for entry points)
+    /// Unique publish ID that was used for this execution (Guid.Empty for entry points)
     /// </summary>
-    public Guid PreviousStepId { get; init; } = Guid.Empty;
+    public Guid PublishId { get; init; } = Guid.Empty;
 
     /// <summary>
     /// Timestamp when the activity failed

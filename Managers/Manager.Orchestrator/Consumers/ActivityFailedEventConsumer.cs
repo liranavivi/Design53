@@ -236,7 +236,7 @@ public class ActivityFailedEventConsumer : IConsumer<ActivityFailedEvent>
                 ExecutionId = activityEvent.ExecutionId,
                 Entities = assignmentModels,
                 CorrelationId = activityEvent.CorrelationId,
-                PreviousStepId = activityEvent.StepId // The step that failed is the previous step
+                PublishId = Guid.NewGuid() // Generate new publishId for command publication
             };
 
             await _bus.Publish(command);
@@ -286,11 +286,11 @@ public class ActivityFailedEventConsumer : IConsumer<ActivityFailedEvent>
         {
             // Source cache location
             var sourceMapName = activityEvent.ProcessorId.ToString();
-            var sourceKey = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, activityEvent.StepId, activityEvent.PreviousStepId);
+            var sourceKey = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, activityEvent.StepId, activityEvent.PublishId);
 
             // Destination cache location
             var destinationMapName = destinationProcessorId.ToString();
-            var destinationKey = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, nextStepId, activityEvent.StepId);
+            var destinationKey = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, nextStepId, Guid.NewGuid());
 
             // Copy data from source to destination
             var sourceData = await _rawCacheService.GetAsync(sourceMapName, sourceKey);
@@ -346,7 +346,7 @@ public class ActivityFailedEventConsumer : IConsumer<ActivityFailedEvent>
         try
         {
             var sourceMapName = activityEvent.ProcessorId.ToString();
-            var sourceKey = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, activityEvent.StepId, activityEvent.PreviousStepId);
+            var sourceKey = _rawCacheService.GetCacheKey(activityEvent.OrchestratedFlowEntityId, activityEvent.CorrelationId, activityEvent.ExecutionId, activityEvent.StepId, activityEvent.PublishId);
 
             await _rawCacheService.RemoveAsync(sourceMapName, sourceKey);
 

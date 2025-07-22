@@ -14,11 +14,11 @@ public interface IProcessorService
     Task<Guid> GetProcessorIdAsync();
 
     /// <summary>
-    /// Processes an activity message and returns the response
+    /// Processes an activity message and returns the collection of responses
     /// </summary>
     /// <param name="message">The activity message to process</param>
-    /// <returns>The activity response</returns>
-    Task<ProcessorActivityResponse> ProcessActivityAsync(ProcessorActivityMessage message);
+    /// <returns>Collection of activity responses</returns>
+    Task<IEnumerable<ProcessorActivityResponse>> ProcessActivityAsync(ProcessorActivityMessage message);
 
     /// <summary>
     /// Gets the current health status of the processor
@@ -54,9 +54,9 @@ public interface IProcessorService
     /// <param name="stepId">ID of the step</param>
     /// <param name="executionId">Execution ID</param>
     /// <param name="correlationId">Correlation ID for cache key isolation (defaults to Empty)</param>
-    /// <param name="previousStepId">ID of the previous step</param>
+    /// <param name="publishId">Unique publish ID for this execution</param>
     /// <returns>The cached data as a string</returns>
-    Task<string?> GetCachedDataAsync(Guid orchestratedFlowEntityId, Guid correlationId, Guid executionId, Guid stepId , Guid previousStepId );
+    Task<string?> GetCachedDataAsync(Guid orchestratedFlowEntityId, Guid correlationId, Guid executionId, Guid stepId , Guid publishId );
 
 
     /// <summary>
@@ -67,9 +67,9 @@ public interface IProcessorService
     /// <param name="executionId">Execution ID</param>
     /// <param name="data">Data to save</param>
     /// <param name="correlationId">Correlation ID for cache key isolation (defaults to Empty)</param>
-    /// <param name="previousStepId">ID of the previous step</param>
+    /// <param name="publishId">Unique publish ID for this execution</param>
     /// <returns>Task representing the save operation</returns>
-    Task SaveCachedDataAsync(Guid orchestratedFlowEntityId, Guid correlationId, Guid executionId, Guid stepId, Guid previousStepId, string data );
+    Task SaveCachedDataAsync(Guid orchestratedFlowEntityId, Guid correlationId, Guid executionId, Guid stepId, Guid publishId, string data );
 
     /// <summary>
     /// Validates data against the input schema

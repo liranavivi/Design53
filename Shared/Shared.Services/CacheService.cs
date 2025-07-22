@@ -267,9 +267,9 @@ public class CacheService : ICacheService
         }
     }
 
-    public string GetCacheKey(Guid orchestratedFlowEntityId, Guid correlationId, Guid executionId, Guid stepId, Guid previousStepId)
+    public string GetCacheKey(Guid orchestratedFlowEntityId, Guid correlationId, Guid executionId, Guid stepId, Guid publishId)
     {
-        return $"{orchestratedFlowEntityId}:{correlationId}:{executionId}:{stepId}:{previousStepId}";
+        return $"{orchestratedFlowEntityId}:{correlationId}:{executionId}:{stepId}:{publishId}";
     }
 
     /// <summary>

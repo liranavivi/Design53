@@ -20,8 +20,8 @@ public interface IActivityExecutor
     /// <param name="inputData">Input data retrieved from cache (validated against InputSchema)</param>
     /// <param name="correlationId">Correlation ID for tracking</param>
     /// <param name="cancellationToken">Cancellation token for the operation</param>
-    /// <returns>Result data that will be validated against OutputSchema and saved to cache</returns>
-    Task<ActivityExecutionResult> ExecuteActivityAsync(
+    /// <returns>Collection of result data that will be validated against OutputSchema and saved to cache</returns>
+    Task<IEnumerable<ActivityExecutionResult>> ExecuteActivityAsync(
         Guid processorId,
         Guid orchestratedFlowEntityId,
         Guid stepId,

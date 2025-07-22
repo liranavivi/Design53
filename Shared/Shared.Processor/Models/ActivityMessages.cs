@@ -38,9 +38,9 @@ public class ProcessorActivityMessage
     public Guid CorrelationId { get; set; } = Guid.Empty;
 
     /// <summary>
-    /// ID of the previous step that led to this step execution (Guid.Empty for entry points)
+    /// Unique publish ID generated for each command publication (Guid.Empty for entry points)
     /// </summary>
-    public Guid PreviousStepId { get; set; } = Guid.Empty;
+    public Guid PublishId { get; set; } = Guid.Empty;
 
     /// <summary>
     /// Timestamp when the message was created

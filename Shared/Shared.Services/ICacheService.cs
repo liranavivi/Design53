@@ -62,9 +62,9 @@ public interface ICacheService : IDisposable
 
     /// <summary>
     /// Generates a standardized cache key for orchestration workflow data using the pattern:
-    /// {orchestratedFlowEntityId}:{correlationId}:{executionId}:{stepId}:{previousStepId}
+    /// {orchestratedFlowEntityId}:{correlationId}:{executionId}:{stepId}:{publishId}
     /// This ensures consistent key formatting across all processors and orchestration components.
-    /// The previousStepId should be Guid.Empty for entry point steps.
+    /// The publishId should be Guid.Empty for entry point steps.
     /// </summary>
-    string GetCacheKey(Guid orchestratedFlowEntityId, Guid correlationId, Guid executionId, Guid stepId, Guid previousStepId);
+    string GetCacheKey(Guid orchestratedFlowEntityId, Guid correlationId, Guid executionId, Guid stepId, Guid publishId);
 }
